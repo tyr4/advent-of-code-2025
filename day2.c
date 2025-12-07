@@ -6,6 +6,23 @@
 #define BUFFER_SIZE 1000
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
+int isSameDigits(int num) {
+    // single digit case
+    if (num == num % 10) return 0;
+
+    int starting = num % 10;
+
+    while (num) {
+        if (num % 10 != starting) {
+            return 0;
+        }
+
+        num /= 10;
+    }
+
+    return 1;
+}
+
 int getNumDigits(long num) {
     return (int)floor(log10(num)) + 1;
 }
@@ -15,12 +32,14 @@ long getFirstHalf(long num) {
 
     // funny trick
     sprintf(buff, "%ld", num);
-    buff[max(strlen(buff) / 2, 1)] = '\0';
+    // input 777 -> returns 77
+    // input 7777 -> still returns 77
+    buff[max(strlen(buff) & 1? strlen(buff) / 2 + 1 : strlen(buff) / 2, 1)] = '\0';
 
     return atol(buff);
 }
 
-long mirrorNumber(long num) {
+long duplicateNumber(long num) {
     char buff[50];
 
     sprintf(buff, "%ld%ld", num, num);
@@ -28,8 +47,19 @@ long mirrorNumber(long num) {
     return atol(buff);
 }
 
+long duplicateToFill(int num, int len) {
+    char buff[50] = "", charNum[10];
+
+    sprintf(charNum, "%d", num);
+
+    while (strlen(buff) < len) {
+        strcat(buff, charNum);
+    }
+
+    return atol(buff);
+}
+
 long nextDigit(long num) {
-    char buff[50];
     int len = getNumDigits(num);
 
     return (long)pow(10, len);
@@ -37,11 +67,9 @@ long nextDigit(long num) {
 
 int main() {
     FILE *file = fopen("../input.txt", "r");
-    FILE *debug = fopen("../debug.txt", "w");
     char buff[BUFFER_SIZE], num[20];
     long leftId = 0, rightId = 0;
     long long sum = 0;
-
 
     if (!file) {
         perror("file");
@@ -69,44 +97,31 @@ int main() {
             }
         }
 
-        // long rez = mirrorFirstHalf(leftId);
-        // long rez2 = nextDigit(leftId);
-        // printf("magic num %ld next %ld\n", rez, rez2);
-        printf("\n%ld %ld\n", leftId, rightId);
-
         p = strtok(NULL, ",");
 
-        // handle the action computation
-        // the digits must be even
-        if (getNumDigits(leftId) & 1) {
-            leftId = nextDigit(leftId);
-        }
-
         while (leftId < rightId) {
-            long firstHalf = getFirstHalf(leftId);
-            long maxRange = nextDigit(firstHalf);
+            long rightFirstHalf = getFirstHalf(rightId);
 
-            printf("%ld %ld %ld\n", leftId, firstHalf, maxRange);
+            for (int i = 1; i <= rightFirstHalf; i++) {
+                // avoid duplicates like filling with 1 and then with 11 producing
+                // the same number
+                if (isSameDigits(i)) continue;
 
-            // cant think of a better way to account for all numbers
-            for (long i = firstHalf; i < maxRange; i++) {
-                long duplicated = mirrorNumber(i);
+                long duplicated = duplicateToFill(i, getNumDigits(leftId));
 
                 if (duplicated >= leftId && duplicated <= rightId) {
-                    fprintf(debug,"START %ld END %ld %ld\n", leftId, rightId, duplicated);
                     sum += duplicated;
                 }
                 else if (duplicated > rightId) {
-                    break;
+                    i = (int)nextDigit(i);
                 }
             }
 
-            // continue ensuring even digits
-            leftId = nextDigit(nextDigit(leftId));
+            leftId = nextDigit(leftId);
         }
     }
 
-    printf("am %lld mere", sum);
+    printf("the sum is only %lld", sum);
 
     fclose(file);
     return 0;
